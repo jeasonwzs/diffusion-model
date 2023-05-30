@@ -14,7 +14,6 @@ from utils import get_data
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
-
 class Diffusion:
     def __init__(self, noise_steps=500, beta_start=1e-4, beta_end=0.02, img_size=64, device="cuda"):
         self.noise_steps = noise_steps
@@ -47,9 +46,6 @@ class Diffusion:
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
 
                 t = paddle.to_tensor([i] * x.shape[0]).astype("int64")
-                # print(x.shape, t.shape)
-
-                # print(f"完成第{i}步")
                 predicted_noise = model(x, t)
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_hat = self.alpha_hat[t][:, None, None, None]
@@ -59,7 +55,7 @@ class Diffusion:
                 else:
                     noise = paddle.zeros_like(x)
                 x = 1 / paddle.sqrt(alpha) * (
-                            x - ((1 - alpha) / (paddle.sqrt(1 - alpha_hat))) * predicted_noise) + paddle.sqrt(
+                        x - ((1 - alpha) / (paddle.sqrt(1 - alpha_hat))) * predicted_noise) + paddle.sqrt(
                     beta) * noise
         model.train()
         x = (x.clip(-1, 1) + 1) / 2
@@ -68,7 +64,6 @@ class Diffusion:
 
 
 def train(args):
-    # setup_logging(args.run_name)
     device = args.device
     dataloader = get_data(args)
 
@@ -78,7 +73,6 @@ def train(args):
     opt = optimizer.Adam(learning_rate=args.lr, parameters=model.parameters())
     mse = nn.MSELoss()
     diffusion = Diffusion(img_size=args.image_size, device=device)
-    # logger = SummaryWriter(os.path.join("runs", args.run_name))
     l = len(dataloader)
 
     for epoch in range(args.epochs):
@@ -97,9 +91,6 @@ def train(args):
 
             pbar.set_postfix(MSE=loss.item())
 
-            # print(("MSE", loss.item(), "global_step", epoch * l + i))
-            # logger.add_scalar("MSE", loss.item(), global_step=epoch * l + i)
-
         if epoch % 20 == 0:
             paddle.save(model.state_dict(), f"landscape_model/ddpm_uncond{epoch}.pdparams")
             sampled_images = diffusion.sample(model, n=8)
@@ -113,8 +104,6 @@ def train(args):
 
 
 def launch():
-    import argparse
-
     # 参数设置
     class ARGS:
         def __init__(self):
@@ -125,7 +114,6 @@ def launch():
             self.dataset_path = r"data/face"
             self.device = "cuda"
             self.lr = 1.5e-4
-
     args = ARGS()
     train(args)
 
